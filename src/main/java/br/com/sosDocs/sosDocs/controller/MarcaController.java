@@ -1,8 +1,8 @@
 package br.com.sosDocs.sosDocs.controller;
 
-import br.com.sosDocs.sosDocs.dto.MarcaDTO;
-import br.com.sosDocs.sosDocs.entity.Marca;
-import br.com.sosDocs.sosDocs.entity.Patrimonio;
+import br.com.sosDocs.sosDocs.dto.MarcaRequestDTO;
+import br.com.sosDocs.sosDocs.dto.MarcaResponseDTO;
+import br.com.sosDocs.sosDocs.dto.PatrimonioResponseDTO;
 import br.com.sosDocs.sosDocs.exception.NomeExistenteException;
 import br.com.sosDocs.sosDocs.service.MarcaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,15 +14,16 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "*")
 public class MarcaController {
 
     @Autowired
     private MarcaService marcaService;
 
     @PostMapping("/marcas")
-    public ResponseEntity criarMarca(@RequestBody Marca marca) {
+    public ResponseEntity criarMarca(@RequestBody MarcaRequestDTO marca) {
         try {
-            Marca marcaResponse = marcaService.criarMarca(marca);
+            MarcaResponseDTO marcaResponse = marcaService.criarMarca(marca);
             return ResponseEntity.ok(marcaResponse);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
@@ -30,19 +31,19 @@ public class MarcaController {
     }
 
     @GetMapping("/marcas")
-    public ResponseEntity<List<Marca>> buscarTodasMarcas() {
+    public ResponseEntity<List<MarcaResponseDTO>> buscarTodasMarcas() {
         return ResponseEntity.ok(marcaService.buscarMarcas());
     }
 
     @GetMapping("/marcas/{id}")
-    public ResponseEntity<MarcaDTO> buscarMarcaPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(marcaService.converterParaDTO(marcaService.buscarMarcaPorId(id)));
+    public ResponseEntity<MarcaResponseDTO> buscarMarcaPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(marcaService.buscarMarcaPorId(id));
     }
 
     @GetMapping("/marcas/{id}/patrimonios")
     public ResponseEntity buscarPatrimonioPorMarcaId(@PathVariable Long id) {
         try {
-            List<Patrimonio> patrimonios = marcaService.buscarPatrimoniosPorMarcaId(id);
+            List<PatrimonioResponseDTO> patrimonios = marcaService.buscarPatrimoniosPorMarcaId(id);
             return ResponseEntity.ok(patrimonios);
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getMessage());
@@ -53,9 +54,9 @@ public class MarcaController {
     }
 
     @PutMapping("/marca/{id}")
-    public ResponseEntity atualizarMarca(@RequestBody Marca marcaAtualizada) {
+    public ResponseEntity atualizarMarca(@RequestBody MarcaRequestDTO marcaAtualizada, @PathVariable Long id) {
         try {
-            marcaService.atualizarMarca(marcaAtualizada);
+            marcaService.atualizarMarca(marcaAtualizada, id);
             return new ResponseEntity(HttpStatus.ACCEPTED);
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getMessage());

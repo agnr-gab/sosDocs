@@ -1,6 +1,7 @@
 package br.com.sosDocs.sosDocs.mapper;
 
-import br.com.sosDocs.sosDocs.dto.MarcaDTO;
+import br.com.sosDocs.sosDocs.dto.MarcaRequestDTO;
+import br.com.sosDocs.sosDocs.dto.MarcaResponseDTO;
 import br.com.sosDocs.sosDocs.entity.Marca;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -15,10 +16,13 @@ public abstract class MarcaMapper {
 
     @Mapping(target = "nome", source = "nome")
     @Mapping(target = "patrimonios", source = "patrimonios")
-    public abstract Marca mapFromDTO(MarcaDTO marcaDTO);
+    public abstract Marca mapFromDTO(MarcaResponseDTO marcaResponseDTO);
 
     @Mapping(target = "nome", source = "nome")
     @Mapping(target = "patrimonios", source = "patrimonios")
-    public abstract MarcaDTO mapFrom(Marca marca);
+    public abstract MarcaResponseDTO mapFrom(Marca marca);
+
+    @Mapping(target = "nome", source = "nome")
+    public abstract Marca mapFromRequestDTO(MarcaRequestDTO marcaRequestDTO);
 
 }
