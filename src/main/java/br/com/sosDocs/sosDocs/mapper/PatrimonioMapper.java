@@ -1,6 +1,7 @@
 package br.com.sosDocs.sosDocs.mapper;
 
-import br.com.sosDocs.sosDocs.dto.PatrimonioDTO;
+import br.com.sosDocs.sosDocs.dto.PatrimonioRequestDTO;
+import br.com.sosDocs.sosDocs.dto.PatrimonioResponseDTO;
 import br.com.sosDocs.sosDocs.entity.Patrimonio;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -15,21 +16,26 @@ public abstract class PatrimonioMapper {
 
     @Mapping(target = "nome", source = "nome")
     @Mapping(target = "descricao", source = "descricao")
-    public abstract Patrimonio mapFrom(PatrimonioDTO patrimonioDTO);
+    public abstract Patrimonio mapFrom(PatrimonioResponseDTO patrimonioDTO);
 
     @Mapping(target = "nome", source = "nome")
     @Mapping(target = "descricao", source = "descricao")
-    public abstract PatrimonioDTO mapFrom(Patrimonio patrimonio);
+    @Mapping(target = "numeroTombo", source = "numeroTombo")
+    public abstract PatrimonioResponseDTO mapFrom(Patrimonio patrimonio);
 
-    public List<Patrimonio> mapFromDTO(List<PatrimonioDTO> patrimoniosDTO) {
+    @Mapping(target = "nome", source = "nome")
+    @Mapping(target = "descricao", source = "descricao")
+    public abstract Patrimonio mapFrom(PatrimonioRequestDTO patrimonioDTO);
+
+    public List<Patrimonio> mapFromDTO(List<PatrimonioResponseDTO> patrimoniosDTO) {
         List<Patrimonio> patrimonios = new ArrayList<>();
         patrimoniosDTO.forEach(patrimonioDTO -> patrimonios.add(mapFrom(patrimonioDTO)));
 
         return patrimonios;
     }
 
-    public List<PatrimonioDTO> mapFrom(List<Patrimonio> patrimonios) {
-        List<PatrimonioDTO> patrimoniosDTO = new ArrayList<>();
+    public List<PatrimonioResponseDTO> mapFrom(List<Patrimonio> patrimonios) {
+        List<PatrimonioResponseDTO> patrimoniosDTO = new ArrayList<>();
         patrimonios.forEach(patrimonio -> patrimoniosDTO.add(mapFrom(patrimonio)));
 
         return patrimoniosDTO;

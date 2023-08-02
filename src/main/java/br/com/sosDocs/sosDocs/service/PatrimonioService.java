@@ -1,6 +1,10 @@
 package br.com.sosDocs.sosDocs.service;
 
+import br.com.sosDocs.sosDocs.dto.PatrimonioRequestDTO;
+import br.com.sosDocs.sosDocs.dto.PatrimonioResponseDTO;
+import br.com.sosDocs.sosDocs.entity.Marca;
 import br.com.sosDocs.sosDocs.entity.Patrimonio;
+import br.com.sosDocs.sosDocs.mapper.PatrimonioMapper;
 import br.com.sosDocs.sosDocs.repository.MarcaRepository;
 import br.com.sosDocs.sosDocs.repository.PatrimonioRepository;
 import jakarta.validation.Validation;
@@ -11,7 +15,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PatrimonioService {
@@ -25,30 +34,39 @@ public class PatrimonioService {
     ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
     Validator validator = factory.getValidator();
 
-    public List<Patrimonio> buscarPatrimonios() {
-        return patrimonioRepository.findAll();
+    public List<PatrimonioResponseDTO> buscarPatrimonios() {
+        List<Patrimonio> all = patrimonioRepository.findAll();
+        List<PatrimonioResponseDTO> patrimonioResponseDTOS = new ArrayList<>();
+        all.forEach(patrimonio -> patrimonioResponseDTOS.add(PatrimonioMapper.INSTANCE.mapFrom(patrimonio)));
+        return patrimonioResponseDTOS;
     }
 
-    public Patrimonio buscarPatrimonioPorId(Long id) {
-        return patrimonioRepository.findByPatrimonioId(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        String.format("Id do patrimônio informado: %d não localizado", id)));
+    public PatrimonioResponseDTO buscarPatrimonioPorId(Long id) {
+        Optional<Patrimonio> patrimonio = Optional.ofNullable(patrimonioRepository.findByPatrimonioId(id)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                String.format("Id do patrimônio informado: %d não localizado", id))));
+
+        return PatrimonioMapper.INSTANCE.mapFrom(patrimonio.get());
     }
 
-    public Patrimonio criarPatrimonio(Patrimonio patrimonio) {
+    public PatrimonioResponseDTO criarPatrimonio(PatrimonioRequestDTO patrimonio) {
         validarMarcaId(patrimonio);
-        patrimonio.setNumeroTombo(null);
-        return patrimonioRepository.save(patrimonio);
+        Patrimonio patrimonio1 = PatrimonioMapper.INSTANCE.mapFrom(patrimonio);
+        criarNumeroTombo(patrimonio1);
+
+        Patrimonio save = patrimonioRepository.save(patrimonio1);
+        vincularMarcaPatrimonio(patrimonio, save);
+        return PatrimonioMapper.INSTANCE.mapFrom(save);
     }
 
-    public void atualizarPatrimonio(Patrimonio patrimonioUpdate) {
+    public void atualizarPatrimonio(PatrimonioRequestDTO patrimonioUpdate, Long id) {
         try {
-            Patrimonio patrimonio = buscarPatrimonioPorId(patrimonioUpdate.getPatrimonioId());
-            patrimonioUpdate.setNumeroTombo(patrimonio.getNumeroTombo());
-//            if (!patrimonio.getMarcaId().equals(patrimonioUpdate.getMarcaId())) {
-//                validarMarcaId(patrimonioUpdate);
-   //         }
-            patrimonioRepository.save(patrimonioUpdate);
+            validarMarcaId(patrimonioUpdate);
+            Patrimonio patrimonio1 = PatrimonioMapper.INSTANCE.mapFrom(patrimonioUpdate);
+            patrimonio1.setPatrimonioId(id);
+            patrimonioRepository.save(patrimonio1);
+            vincularMarcaPatrimonio(patrimonioUpdate, patrimonio1);
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
@@ -65,12 +83,19 @@ public class PatrimonioService {
         patrimonioRepository.deleteById(id);
     }
 
-    private void validarMarcaId(Patrimonio patrimonio) {
-//        if (!marcaRepository.existsById(patrimonio.getMarcaId())) {
-//            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-//                    String.format("Id da marca informado: %d não localizado",
-//                            patrimonio.getMarcaId()));
-//        }
+    public void criarNumeroTombo(Patrimonio patrimonio) {
+        LocalDateTime localDateTime = LocalDateTime.now();
+        ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.systemDefault());
+        Long numeroTombo = zonedDateTime.toInstant().toEpochMilli();
+        patrimonio.setNumeroTombo(numeroTombo.toString());
+    }
+
+    private void validarMarcaId(PatrimonioRequestDTO patrimonio) {
+        if (!marcaRepository.existsById(patrimonio.getMarcaId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    String.format("Id da marca informado: %d não localizado",
+                            patrimonio.getMarcaId()));
+        }
     }
 
     private void validarPatrimonio(Patrimonio patrimonio, String numeroTombo) {
@@ -80,5 +105,20 @@ public class PatrimonioService {
 
     }
 
+    private void vincularMarcaPatrimonio(PatrimonioRequestDTO patrimonio, Patrimonio save) {
+        if (marcaRepository.existsById(patrimonio.getMarcaId())) {
+            Optional<Marca> marca = marcaRepository.findByMarcaId(patrimonio.getMarcaId());
+
+            List<Patrimonio> patrimonios = marca.get().getPatrimonios();
+            if (!patrimonios.contains(save)) {
+                patrimonios.add(save);
+                marca.get().setPatrimonios(patrimonios);
+                marcaRepository.save(marca.get());
+            }
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    String.format("Id da marca informado: %d não localizado", patrimonio.getMarcaId()));
+        }
+    }
 
 }
